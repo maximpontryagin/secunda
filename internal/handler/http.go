@@ -34,6 +34,8 @@ func serviceError(logger *slog.Logger, w http.ResponseWriter, r *http.Request, e
 		writeError(w, http.StatusForbidden, "forbidden", "access denied")
 	case errors.Is(err, service.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found", "resource not found")
+	case errors.Is(err, service.ErrVersionConflict):
+		writeError(w, http.StatusConflict, "version_conflict", "task has changed; reload it and retry with its current version")
 	case errors.Is(err, service.ErrConflict):
 		writeError(w, http.StatusConflict, "conflict", "resource already exists")
 	default:

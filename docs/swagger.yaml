@@ -1,5 +1,64 @@
 basePath: /api/v1
 definitions:
+  handler.CommentResponse:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      task_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  handler.CommentsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/handler.CommentResponse'
+        type: array
+    type: object
+  handler.CreateCommentRequest:
+    properties:
+      content:
+        example: Ready for review
+        minLength: 1
+        type: string
+    required:
+    - content
+    type: object
+  handler.CreateTaskRequest:
+    properties:
+      assignee_id:
+        example: 2
+        minimum: 1
+        type: integer
+        x-nullable: true
+      description:
+        example: Add JWT authentication
+        type: string
+      status:
+        default: todo
+        enum:
+        - todo
+        - in_progress
+        - done
+        type: string
+      team_id:
+        example: 1
+        minimum: 1
+        type: integer
+      title:
+        example: Implement login
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - team_id
+    - title
+    type: object
   handler.CreateTeamRequest:
     properties:
       name:
@@ -18,6 +77,18 @@ definitions:
       message:
         example: invalid request
         type: string
+    type: object
+  handler.FieldChangeResponse:
+    properties:
+      new: {}
+      old: {}
+    type: object
+  handler.HistoryResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/handler.TaskHistoryResponse'
+        type: array
     type: object
   handler.InviteRequest:
     properties:
@@ -83,6 +154,71 @@ definitions:
     - name
     - password
     type: object
+  handler.TaskHistoryResponse:
+    properties:
+      changed_by:
+        type: integer
+      changes:
+        additionalProperties:
+          $ref: '#/definitions/handler.FieldChangeResponse'
+        type: object
+      created_at:
+        type: string
+      id:
+        type: integer
+      task_id:
+        type: integer
+    type: object
+  handler.TaskResponse:
+    properties:
+      assignee_id:
+        example: 2
+        type: integer
+        x-nullable: true
+      closed_at:
+        type: string
+        x-nullable: true
+      created_at:
+        type: string
+      created_by:
+        example: 1
+        type: integer
+      description:
+        type: string
+      id:
+        example: 1
+        type: integer
+      status:
+        enum:
+        - todo
+        - in_progress
+        - done
+        type: string
+      team_id:
+        example: 1
+        type: integer
+      title:
+        example: Implement login
+        type: string
+      updated_at:
+        type: string
+      version:
+        example: 1
+        type: integer
+    type: object
+  handler.TasksResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/handler.TaskResponse'
+        type: array
+      limit:
+        example: 20
+        type: integer
+      offset:
+        example: 0
+        type: integer
+    type: object
   handler.TeamResponse:
     properties:
       created_at:
@@ -120,6 +256,34 @@ definitions:
       token_type:
         example: Bearer
         type: string
+    type: object
+  handler.UpdateTaskRequest:
+    properties:
+      assignee_id:
+        example: 2
+        minimum: 1
+        type: integer
+        x-nullable: true
+      description:
+        example: Add JWT authentication
+        type: string
+      status:
+        enum:
+        - todo
+        - in_progress
+        - done
+        type: string
+      title:
+        example: Implement login
+        maxLength: 255
+        minLength: 1
+        type: string
+      version:
+        example: 1
+        minimum: 1
+        type: integer
+    required:
+    - version
     type: object
   handler.UserResponse:
     properties:
@@ -223,6 +387,305 @@ paths:
       summary: Register a user
       tags:
       - auth
+  /tasks:
+    get:
+      parameters:
+      - description: Team ID
+        in: query
+        minimum: 1
+        name: team_id
+        required: true
+        type: integer
+      - description: Status
+        enum:
+        - todo
+        - in_progress
+        - done
+        in: query
+        name: status
+        type: string
+      - description: Assignee ID
+        in: query
+        minimum: 1
+        name: assignee_id
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        minimum: 0
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.TasksResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List tasks of a team
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "415":
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a task and its initial history
+      tags:
+      - tasks
+  /tasks/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Version is required. Omitted fields are unchanged. Null assignee_id
+        removes the assignee. An assignee who is not the creator, owner or admin may
+        only change status. Stale versions return 409.
+      parameters:
+      - description: Task ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: Changes and current version
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "415":
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a task with optimistic concurrency control
+      tags:
+      - tasks
+  /tasks/{id}/comments:
+    get:
+      parameters:
+      - description: Task ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.CommentsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get task comments in chronological order
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: Comment
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.CommentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "415":
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a task comment
+      tags:
+      - tasks
+  /tasks/{id}/history:
+    get:
+      parameters:
+      - description: Task ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.HistoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get task history in chronological order
+      tags:
+      - tasks
   /teams:
     get:
       produces:

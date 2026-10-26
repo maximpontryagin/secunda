@@ -11,11 +11,13 @@ packages:
     interfaces:
       TransactionManager:
       UserRepository:
+      TaskRepository:
       TeamRepository:
       PasswordHasher:
       TokenIssuer:
   secunda/internal/handler:
     interfaces:
       AuthService:
+      TaskService:
       TeamService:
       TokenVerifier:
