@@ -1,0 +1,21 @@
+with-expecter: true
+resolve-type-alias: false
+disable-version-string: true
+issue-845-fix: true
+filename: "{{.InterfaceName | snakecase}}.go"
+mockname: "{{.InterfaceName}}"
+outpkg: mocks
+dir: "internal/mocks/{{.PackageName}}"
+packages:
+  secunda/internal/service:
+    interfaces:
+      TransactionManager:
+      UserRepository:
+      TeamRepository:
+      PasswordHasher:
+      TokenIssuer:
+  secunda/internal/handler:
+    interfaces:
+      AuthService:
+      TeamService:
+      TokenVerifier:
