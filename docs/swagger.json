@@ -786,6 +786,71 @@
                     }
                 }
             }
+        },
+        "/teams/{team_id}/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Owner/admin only. Status counts and comments cover all team tasks. Average close time covers all currently done tasks, in seconds (null if none). Top 3 assignees cover tasks closed in the last 30 days, ordered by count descending then user ID ascending. Unassigned tasks are excluded from the top.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "teams"
+                ],
+                "summary": "Get team statistics",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Team ID",
+                        "name": "team_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.StatisticsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -977,6 +1042,23 @@
                 }
             }
         },
+        "handler.PerformerResponse": {
+            "type": "object",
+            "properties": {
+                "closed_tasks": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Alice"
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 2
+                }
+            }
+        },
         "handler.RegisterRequest": {
             "type": "object",
             "required": [
@@ -1001,6 +1083,50 @@
                     "maxLength": 72,
                     "minLength": 8,
                     "example": "local-password"
+                }
+            }
+        },
+        "handler.StatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "average_close_seconds": {
+                    "type": "number",
+                    "x-nullable": true,
+                    "example": 3600
+                },
+                "comments_count": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "tasks_by_status": {
+                    "$ref": "#/definitions/handler.TaskCountsResponse"
+                },
+                "team_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "top_assignees": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.PerformerResponse"
+                    }
+                }
+            }
+        },
+        "handler.TaskCountsResponse": {
+            "type": "object",
+            "properties": {
+                "done": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "in_progress": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "todo": {
+                    "type": "integer",
+                    "example": 3
                 }
             }
         },

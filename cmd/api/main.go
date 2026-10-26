@@ -67,8 +67,9 @@ func run(logger *slog.Logger) error {
 	authService := service.NewAuth(users, passwords, tokens)
 	transactions := transaction.New(db)
 	teamService := service.NewTeams(teams, users, transactions)
-	taskService := service.NewTasks(repository.NewTasks(db), teams, transactions)
-	router := handler.NewRouter(handler.NewAuth(authService, logger), handler.NewTeams(teamService, logger), handler.NewTasks(taskService, logger), tokens)
+	taskService := service.NewTasks(repository.NewTasks(db), teams, transactions, repository.NewTaskCache(cache, logger))
+	reports := service.NewReports(repository.NewStatistics(db), teams)
+	router := handler.NewRouter(handler.NewAuth(authService, logger), handler.NewTeams(teamService, logger), handler.NewTasks(taskService, logger), handler.NewStatistics(reports, logger), tokens)
 	server := &http.Server{
 		Addr: cfg.HTTP.Addr, Handler: router,
 		ReadHeaderTimeout: 5 * time.Second, ReadTimeout: cfg.HTTP.ReadTimeout,

@@ -133,6 +133,18 @@ definitions:
         example: 2
         type: integer
     type: object
+  handler.PerformerResponse:
+    properties:
+      closed_tasks:
+        example: 5
+        type: integer
+      name:
+        example: Alice
+        type: string
+      user_id:
+        example: 2
+        type: integer
+    type: object
   handler.RegisterRequest:
     properties:
       email:
@@ -153,6 +165,37 @@ definitions:
     - email
     - name
     - password
+    type: object
+  handler.StatisticsResponse:
+    properties:
+      average_close_seconds:
+        example: 3600
+        type: number
+        x-nullable: true
+      comments_count:
+        example: 10
+        type: integer
+      tasks_by_status:
+        $ref: '#/definitions/handler.TaskCountsResponse'
+      team_id:
+        example: 1
+        type: integer
+      top_assignees:
+        items:
+          $ref: '#/definitions/handler.PerformerResponse'
+        type: array
+    type: object
+  handler.TaskCountsResponse:
+    properties:
+      done:
+        example: 5
+        type: integer
+      in_progress:
+        example: 2
+        type: integer
+      todo:
+        example: 3
+        type: integer
     type: object
   handler.TaskHistoryResponse:
     properties:
@@ -811,6 +854,51 @@ paths:
       security:
       - BearerAuth: []
       summary: Add a registered user to a team
+      tags:
+      - teams
+  /teams/{team_id}/stats:
+    get:
+      description: Owner/admin only. Status counts and comments cover all team tasks.
+        Average close time covers all currently done tasks, in seconds (null if none).
+        Top 3 assignees cover tasks closed in the last 30 days, ordered by count descending
+        then user ID ascending. Unassigned tasks are excluded from the top.
+      parameters:
+      - description: Team ID
+        in: path
+        minimum: 1
+        name: team_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.StatisticsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get team statistics
       tags:
       - teams
 securityDefinitions:

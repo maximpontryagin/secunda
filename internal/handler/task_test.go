@@ -24,7 +24,7 @@ func taskRouter(t *testing.T) (http.Handler, *mocks.TaskService) {
 	tasks := mocks.NewTaskService(t)
 	verifier := mocks.NewTokenVerifier(t)
 	verifier.EXPECT().Verify("token").Return(int64(7), nil).Once()
-	return handler.NewRouter(handler.NewAuth(auth, logger), handler.NewTeams(teams, logger), handler.NewTasks(tasks, logger), verifier), tasks
+	return handler.NewRouter(handler.NewAuth(auth, logger), handler.NewTeams(teams, logger), handler.NewTasks(tasks, logger), handler.NewStatistics(mocks.NewStatisticsService(t), logger), verifier), tasks
 }
 
 func TestUpdateAssigneePresence(t *testing.T) {

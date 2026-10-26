@@ -20,7 +20,7 @@ func taskService(t *testing.T) (*service.Tasks, *mocks.TaskRepository, *mocks.Te
 	tasks := mocks.NewTaskRepository(t)
 	teams := mocks.NewTeamRepository(t)
 	tx := mocks.NewTransactionManager(t)
-	return service.NewTasks(tasks, teams, tx), tasks, teams, tx
+	return service.NewTasks(tasks, teams, tx, nil), tasks, teams, tx
 }
 
 func taskTransaction(tx *mocks.TransactionManager) {
@@ -58,6 +58,7 @@ func TestTaskUpdatePermissions(t *testing.T) {
 				if tc.input.SetAssignee && tc.input.AssigneeID != nil {
 					teams.EXPECT().MemberRole(mock.Anything, int64(20), *tc.input.AssigneeID).Return(service.RoleMember, nil).Once()
 				}
+				tasks.EXPECT().AdvanceListVersion(mock.Anything, int64(20)).Return(nil).Once()
 				tasks.EXPECT().Update(mock.Anything, mock.MatchedBy(func(next service.Task) bool { return next.Version == 8 }), int64(7)).Return(nil).Once()
 				tasks.EXPECT().AddHistory(mock.Anything, mock.MatchedBy(func(entry service.TaskHistory) bool {
 					return entry.TaskID == 10 && entry.ChangedBy == tc.actor && entry.Changes["version"].Old == int64(7) && entry.Changes["version"].New == int64(8)
@@ -90,6 +91,7 @@ func TestTaskStatusClosedAt(t *testing.T) {
 		}
 		tasks.EXPECT().Find(mock.Anything, int64(10)).Return(current, nil).Once()
 		teams.EXPECT().MemberRole(mock.Anything, int64(20), int64(1)).Return(service.RoleMember, nil).Once()
+		tasks.EXPECT().AdvanceListVersion(mock.Anything, int64(20)).Return(nil).Once()
 		tasks.EXPECT().Update(mock.Anything, mock.MatchedBy(func(next service.Task) bool {
 			if reopen {
 				return next.ClosedAt == nil
@@ -123,6 +125,7 @@ func TestTaskUpdateFailuresDoNotWriteHistory(t *testing.T) {
 			case "stale version":
 				input.Version = 1
 			case "concurrent update":
+				tasks.EXPECT().AdvanceListVersion(mock.Anything, int64(20)).Return(nil).Once()
 				tasks.EXPECT().Update(mock.Anything, mock.Anything, int64(2)).Return(service.ErrVersionConflict).Once()
 			case "foreign assignee":
 				input.SetAssignee = true
@@ -147,6 +150,7 @@ func TestTaskUpdateHistoryFailurePropagatesToTransaction(t *testing.T) {
 	}).Once()
 	tasks.EXPECT().Find(mock.Anything, int64(10)).Return(service.Task{ID: 10, TeamID: 20, CreatedBy: 1, Version: 1}, nil).Once()
 	teams.EXPECT().MemberRole(mock.Anything, int64(20), int64(1)).Return(service.RoleMember, nil).Once()
+	tasks.EXPECT().AdvanceListVersion(mock.Anything, int64(20)).Return(nil).Once()
 	tasks.EXPECT().Update(mock.Anything, mock.Anything, int64(1)).Return(nil).Once()
 	tasks.EXPECT().AddHistory(mock.Anything, mock.Anything).Return(failure).Once()
 	task, err := svc.Update(context.Background(), 1, 10, service.UpdateTaskInput{Version: 1, Title: ptr("New")})
@@ -173,6 +177,7 @@ func TestTaskCreateUsesTransactionAndWritesInitialHistory(t *testing.T) {
 	tx.EXPECT().WithinTransaction(ctx, mock.Anything).RunAndReturn(func(_ context.Context, fn func(context.Context) error) error { return fn(txCtx) }).Once()
 	teams.EXPECT().MemberRole(txCtx, int64(20), int64(1)).Return(service.RoleMember, nil).Once()
 	teams.EXPECT().MemberRole(txCtx, int64(20), int64(2)).Return(service.RoleMember, nil).Once()
+	tasks.EXPECT().AdvanceListVersion(txCtx, int64(20)).Return(nil).Once()
 	tasks.EXPECT().Create(txCtx, mock.Anything).RunAndReturn(func(_ context.Context, task service.Task) (service.Task, error) {
 		require.Equal(t, int64(1), task.CreatedBy)
 		require.Equal(t, int64(1), task.Version)

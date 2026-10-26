@@ -80,7 +80,7 @@ func newTaskFixture(t *testing.T) taskFixture {
 			require.NoError(t, err)
 		}
 	})
-	fixture.service = service.NewTasks(fixture.tasks, teams, manager)
+	fixture.service = service.NewTasks(fixture.tasks, teams, manager, nil)
 	return fixture
 }
 
@@ -134,6 +134,9 @@ func TestHistoryFailureRollsBackTaskCreationAndUpdate(t *testing.T) {
 	now := time.Now().UTC()
 	var failedID int64
 	err := f.manager.WithinTransaction(f.ctx, func(ctx context.Context) error {
+		if err := f.tasks.AdvanceListVersion(ctx, f.teamID); err != nil {
+			return err
+		}
 		task, err := f.tasks.Create(ctx, service.Task{TeamID: f.teamID, Title: "Must rollback", Status: service.StatusTodo, CreatedBy: f.userID, CreatedAt: now, UpdatedAt: now, Version: 1})
 		if err != nil {
 			return err
@@ -145,6 +148,9 @@ func TestHistoryFailureRollsBackTaskCreationAndUpdate(t *testing.T) {
 	require.Positive(t, failedID)
 	_, err = f.tasks.Find(f.ctx, failedID)
 	require.ErrorIs(t, err, service.ErrNotFound)
+	version, err := f.tasks.ListVersion(f.ctx, f.teamID)
+	require.NoError(t, err)
+	require.Zero(t, version)
 
 	task, err := f.service.Create(f.ctx, f.userID, service.CreateTaskInput{TeamID: f.teamID, Title: "Original"})
 	require.NoError(t, err)
@@ -152,6 +158,9 @@ func TestHistoryFailureRollsBackTaskCreationAndUpdate(t *testing.T) {
 	updated.Title = "Must rollback"
 	updated.Version++
 	err = f.manager.WithinTransaction(f.ctx, func(ctx context.Context) error {
+		if err := f.tasks.AdvanceListVersion(ctx, f.teamID); err != nil {
+			return err
+		}
 		if err := f.tasks.Update(ctx, updated, task.Version); err != nil {
 			return err
 		}
@@ -165,4 +174,7 @@ func TestHistoryFailureRollsBackTaskCreationAndUpdate(t *testing.T) {
 	history, err := f.tasks.ListHistory(f.ctx, task.ID)
 	require.NoError(t, err)
 	require.Len(t, history, 1)
+	version, err = f.tasks.ListVersion(f.ctx, f.teamID)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), version)
 }

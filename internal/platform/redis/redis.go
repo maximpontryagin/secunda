@@ -16,6 +16,7 @@ func Open(ctx context.Context, cfg config.Redis) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)),
 		Username: cfg.Username, Password: cfg.Password, DB: cfg.DB,
+		MaxRetries: -1, ContextTimeoutEnabled: true,
 		DialTimeout: 5 * time.Second, ReadTimeout: 2 * time.Second, WriteTimeout: 2 * time.Second,
 	})
 	if err := client.Ping(ctx).Err(); err != nil {

@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func NewRouter(auth *Auth, teams *Teams, tasks *Tasks, verifier TokenVerifier) http.Handler {
+func NewRouter(auth *Auth, teams *Teams, tasks *Tasks, statistics *Statistics, verifier TokenVerifier) http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Recoverer)
@@ -25,6 +25,7 @@ func NewRouter(auth *Auth, teams *Teams, tasks *Tasks, verifier TokenVerifier) h
 			r.Post("/teams", teams.Create)
 			r.Get("/teams", teams.List)
 			r.Post("/teams/{id}/invite", teams.Invite)
+			r.Get("/teams/{team_id}/stats", statistics.Get)
 			r.Post("/tasks", tasks.Create)
 			r.Get("/tasks", tasks.List)
 			r.Put("/tasks/{id}", tasks.Update)

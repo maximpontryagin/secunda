@@ -23,7 +23,7 @@ func testRouter(t *testing.T) (http.Handler, *mocks.AuthService, *mocks.TeamServ
 	teams := mocks.NewTeamService(t)
 	verifier := mocks.NewTokenVerifier(t)
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	return handler.NewRouter(handler.NewAuth(auth, logger), handler.NewTeams(teams, logger), handler.NewTasks(mocks.NewTaskService(t), logger), verifier), auth, teams, verifier
+	return handler.NewRouter(handler.NewAuth(auth, logger), handler.NewTeams(teams, logger), handler.NewTasks(mocks.NewTaskService(t), logger), handler.NewStatistics(mocks.NewStatisticsService(t), logger), verifier), auth, teams, verifier
 }
 
 func TestProtectedRoutesRequireBearerToken(t *testing.T) {

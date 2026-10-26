@@ -126,6 +126,53 @@ func (_c *TaskRepository_AddHistory_Call) RunAndReturn(run func(context.Context,
 	return _c
 }
 
+// AdvanceListVersion provides a mock function with given fields: _a0, _a1
+func (_m *TaskRepository) AdvanceListVersion(_a0 context.Context, _a1 int64) error {
+	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AdvanceListVersion")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64) error); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// TaskRepository_AdvanceListVersion_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AdvanceListVersion'
+type TaskRepository_AdvanceListVersion_Call struct {
+	*mock.Call
+}
+
+// AdvanceListVersion is a helper method to define mock.On call
+//   - _a0 context.Context
+//   - _a1 int64
+func (_e *TaskRepository_Expecter) AdvanceListVersion(_a0 interface{}, _a1 interface{}) *TaskRepository_AdvanceListVersion_Call {
+	return &TaskRepository_AdvanceListVersion_Call{Call: _e.mock.On("AdvanceListVersion", _a0, _a1)}
+}
+
+func (_c *TaskRepository_AdvanceListVersion_Call) Run(run func(_a0 context.Context, _a1 int64)) *TaskRepository_AdvanceListVersion_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(int64))
+	})
+	return _c
+}
+
+func (_c *TaskRepository_AdvanceListVersion_Call) Return(_a0 error) *TaskRepository_AdvanceListVersion_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *TaskRepository_AdvanceListVersion_Call) RunAndReturn(run func(context.Context, int64) error) *TaskRepository_AdvanceListVersion_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function with given fields: _a0, _a1
 func (_m *TaskRepository) Create(_a0 context.Context, _a1 service.Task) (service.Task, error) {
 	ret := _m.Called(_a0, _a1)
@@ -413,6 +460,63 @@ func (_c *TaskRepository_ListHistory_Call) Return(_a0 []service.TaskHistory, _a1
 }
 
 func (_c *TaskRepository_ListHistory_Call) RunAndReturn(run func(context.Context, int64) ([]service.TaskHistory, error)) *TaskRepository_ListHistory_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListVersion provides a mock function with given fields: _a0, _a1
+func (_m *TaskRepository) ListVersion(_a0 context.Context, _a1 int64) (int64, error) {
+	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListVersion")
+	}
+
+	var r0 int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64) (int64, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, int64) int64); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// TaskRepository_ListVersion_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListVersion'
+type TaskRepository_ListVersion_Call struct {
+	*mock.Call
+}
+
+// ListVersion is a helper method to define mock.On call
+//   - _a0 context.Context
+//   - _a1 int64
+func (_e *TaskRepository_Expecter) ListVersion(_a0 interface{}, _a1 interface{}) *TaskRepository_ListVersion_Call {
+	return &TaskRepository_ListVersion_Call{Call: _e.mock.On("ListVersion", _a0, _a1)}
+}
+
+func (_c *TaskRepository_ListVersion_Call) Run(run func(_a0 context.Context, _a1 int64)) *TaskRepository_ListVersion_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(int64))
+	})
+	return _c
+}
+
+func (_c *TaskRepository_ListVersion_Call) Return(_a0 int64, _a1 error) *TaskRepository_ListVersion_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *TaskRepository_ListVersion_Call) RunAndReturn(run func(context.Context, int64) (int64, error)) *TaskRepository_ListVersion_Call {
 	_c.Call.Return(run)
 	return _c
 }

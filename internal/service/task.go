@@ -9,7 +9,14 @@ import (
 	"unicode/utf8"
 )
 
+type TaskCache interface {
+	Get(context.Context, TaskFilter, int64) ([]Task, bool, error)
+	Put(context.Context, TaskFilter, int64, []Task) error
+}
+
 type TaskRepository interface {
+	ListVersion(context.Context, int64) (int64, error)
+	AdvanceListVersion(context.Context, int64) error
 	Create(context.Context, Task) (Task, error)
 	Find(context.Context, int64) (Task, error)
 	List(context.Context, TaskFilter) ([]Task, error)
@@ -24,10 +31,11 @@ type Tasks struct {
 	tasks        TaskRepository
 	teams        TeamRepository
 	transactions TransactionManager
+	cache        TaskCache
 }
 
-func NewTasks(tasks TaskRepository, teams TeamRepository, transactions TransactionManager) *Tasks {
-	return &Tasks{tasks: tasks, teams: teams, transactions: transactions}
+func NewTasks(tasks TaskRepository, teams TeamRepository, transactions TransactionManager, cache TaskCache) *Tasks {
+	return &Tasks{tasks: tasks, teams: teams, transactions: transactions, cache: cache}
 }
 
 func (s *Tasks) Create(ctx context.Context, actorID int64, input CreateTaskInput) (Task, error) {
@@ -57,6 +65,9 @@ func (s *Tasks) Create(ctx context.Context, actorID int64, input CreateTaskInput
 			return err
 		}
 		if err := s.checkAssignee(txCtx, input.TeamID, input.AssigneeID); err != nil {
+			return err
+		}
+		if err := s.tasks.AdvanceListVersion(txCtx, input.TeamID); err != nil {
 			return err
 		}
 		now := time.Now().UTC().Truncate(time.Microsecond)
@@ -99,7 +110,25 @@ func (s *Tasks) List(ctx context.Context, actorID int64, filter TaskFilter) ([]T
 	if _, err := s.teams.MemberRole(ctx, filter.TeamID, actorID); err != nil {
 		return nil, err
 	}
-	return s.tasks.List(ctx, filter)
+	if s.cache == nil {
+		return s.tasks.List(ctx, filter)
+	}
+	version, err := s.tasks.ListVersion(ctx, filter.TeamID)
+	if err != nil {
+		return nil, err
+	}
+	cached, hit, cacheErr := s.cache.Get(ctx, filter, version)
+	if cacheErr == nil && hit {
+		return cached, nil
+	}
+	tasks, err := s.tasks.List(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	if cacheErr == nil {
+		_ = s.cache.Put(ctx, filter, version, tasks)
+	}
+	return tasks, nil
 }
 
 func (s *Tasks) Update(ctx context.Context, actorID, taskID int64, input UpdateTaskInput) (Task, error) {
@@ -152,6 +181,9 @@ func (s *Tasks) Update(ctx context.Context, actorID, taskID int64, input UpdateT
 		}
 		changes["version"] = FieldChange{Old: current.Version, New: next.Version}
 		changes["updated_at"] = FieldChange{Old: current.UpdatedAt, New: next.UpdatedAt}
+		if err := s.tasks.AdvanceListVersion(txCtx, current.TeamID); err != nil {
+			return err
+		}
 		if err := s.tasks.Update(txCtx, next, current.Version); err != nil {
 			return err
 		}

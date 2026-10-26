@@ -173,3 +173,27 @@ func (r *Tasks) ListComments(ctx context.Context, taskID int64) ([]service.Comme
 }
 
 var _ service.TaskRepository = (*Tasks)(nil)
+
+func (r *Tasks) ListVersion(ctx context.Context, teamID int64) (int64, error) {
+	var version int64
+	err := transaction.Connection(ctx, r.db).QueryRowContext(ctx, `SELECT task_list_version FROM teams WHERE id = ?`, teamID).Scan(&version)
+	if err != nil {
+		return 0, databaseError("get task list version", err)
+	}
+	return version, nil
+}
+
+func (r *Tasks) AdvanceListVersion(ctx context.Context, teamID int64) error {
+	result, err := transaction.Connection(ctx, r.db).ExecContext(ctx, `UPDATE teams SET task_list_version = task_list_version + 1 WHERE id = ?`, teamID)
+	if err != nil {
+		return databaseError("advance task list version", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return databaseError("read task list version update count", err)
+	}
+	if affected != 1 {
+		return service.ErrNotFound
+	}
+	return nil
+}
